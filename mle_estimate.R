@@ -391,17 +391,23 @@ if(nPBT > 0){
 }
 
 #now create a wrapper for this in a new file (MLEwrapper.R)
+# now need to allow optional use of variables
 
 # now test
 source("./flex_negllh.R")
+source("./flex_negllh_var.R")
 source("./MLEwrapper.R")
 
+varMat <- list(
+	matrix(c(rep(c(.1,.9), 3), rep(c(.9,.1), 3)), nrow = 6, ncol = 2, byrow = TRUE),
+	matrix(c(rep(c(.4,.6), 3), rep(c(.6,.4), 3)), nrow = 6, ncol = 2, byrow = TRUE)
+)
 pbtGSImat <- matrix(c(.1, .8, .1,.8, .1, .1,.1, .1, .8), nrow = 3, ncol = 3, byrow = TRUE)
 
 multStratData <- data.frame()
-tempDataAll <- generatePBTGSIdata(sampRate = .1, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
+tempDataAll <- generatePBTGSIdata(sampRate = .8, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
 									 obsTagRates = c(.8, .85,.9), physTagRates = 0,
-			    true_clipped = 0, true_noclip_H = .3, true_wild = .7, relSizeGSIgroups = c(1,2,1), PBT_GSI_calls = pbtGSImat, varMatList = NA)
+			    true_clipped = 0, true_noclip_H = .3, true_wild = .7, relSizeGSIgroups = c(1,2,1), PBT_GSI_calls = pbtGSImat, varMatList = varMat)
 tempData <- tempDataAll[[1]]
 tempData$StrataVar <- 1
 multStratData <- rbind(multStratData, tempData)
@@ -409,11 +415,82 @@ multStratData <- rbind(multStratData, tempData)
 multStratData$GSI <- paste0("GSIgroup", multStratData$GSI)
 tags <- tempDataAll[[2]]
 
-MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", 5000)
+# MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", 5000)
+# 
+# 
+# 
+# testInput <- prepStrata(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", variableCols = c("Var1"), variableColsOth = c(), "AdClip",
+# 								AI = TRUE, GSIgroups = NA,
+# 									 variableValues = NA, variableValuesOth = NA, verbose = FALSE, symPrior = 0.5)
+# tI <- testInput[[1]]
 
 
-# now need to allow optional use of variables
+res <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))
+res <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "CG", variableCols = c("Var1"), control = list(maxit = 5000))
+res <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "SANN", variableCols = c("Var1"), control = list(maxit = 10000))
 
+res <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", variableCols = c("Var1"), control = list(maxit = 5000))
+
+
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", variableCols = c("Var1"), control = list(maxit = 5000), old = TRUE)
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000), old = TRUE)
+
+st <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$starting
+varKey <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$varKey
+nCat <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$nCat
+utVar <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$utVar
+ohnc_var <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$ohnc_var
+
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000), old = TRUE)[[1]]$piTot
+
+
+## adding the variables makes the estimates worse
+### is there something wrong in the llh equation?
+
+pt <- c(1, st[1:5])
+pt <- pt / sum(pt)
+
+# piGSI
+subParams <- st[(nPBT + nGSI):length(st)]
+piGSItemp <- matrix(0, nrow = (nPBT), ncol = (nGSI)) #initiate with zeros
+if(nPBT > 0){
+	for(i in 1:nPBT){
+		key <- pbtGSIkey[[i]]
+		piGSItemp[i,key[1]] <- 1 #first non-zero group is fixed
+		lk <- length(key)
+		if(lk > 1){
+			piGSItemp[i,key[2:lk]] <- subParams[1:(lk-1)]
+			subParams <- subParams[lk:length(subParams)] #bump entries forward
+			piGSItemp[i,] <- piGSItemp[i,] / sum(piGSItemp[i,]) #normalize
+		}
+	}
+}
+piGSItemp <- rbind(piGSItemp, diag(nGSI)) #add GSI groups as fixed 100%
+colnames(piGSItemp) <- input$GSIkey[,1]
+rownames(piGSItemp) <- input$groupsKey[,1]
+
+#piVar
+piVarList <- list()
+if(nVar > 0){
+	for(v in 1:nVar){
+		piVarTemp <- matrix(0, nrow = (nPBT + nGSI), ncol = nCat[[v]]) #initiate with zeros
+		tempKey <- varKey[[v]]
+		for(i in 1:(nPBT +  nGSI)){
+			key <- tempKey[[i]]
+			piVarTemp[i,key[1]] <- 1 #first non-zero group is fixed
+			lk <- length(key)
+			if(lk > 1){
+				piVarTemp[i,key[2:lk]] <- subParams[1:(lk-1)]
+				subParams <- subParams[lk:length(subParams)] #bump entries forward
+				piVarTemp[i,] <- piVarTemp[i,] / sum(piVarTemp[i,]) #normalize
+				if(sum(piVarTemp[i,] < 0 | piVarTemp[i,] > 1) != 0) return(Inf) #make sure all entries are valid
+			}
+		}
+		piVarList[[v]] <- piVarTemp
+	}
+}
 
 
 #calculate true piTot proportions
