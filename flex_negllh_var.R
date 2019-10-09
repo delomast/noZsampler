@@ -8,7 +8,7 @@
 #' @param utGSI vector of number of un-PBT assigned fish in each GSI group
 #' @param ohnc_gsi matrix of counts of fish GSI assigned to various groups
 #' @param pbtGSIkey list with a vector telling which GSI groups (as integers giving their position in the order)
-#' @param utVar list of vectors (one for each variable) of number of un-PBT assigned fish in each category
+#' @param utVar list of matrices (one for each variable) of number of un-PBT assigned fish in each GSI group (row) x category (column)
 #' @param ohnc_var list of matrices (one for each variable) of counts of PBT-assigned fish in each category (rows are PBT groups)
 #' @param varKey list of lists (one for each variable) with a vector telling which categories (as integers giving their position in the order)
 #' @param nCat list of numbers of categories in each variable
@@ -83,10 +83,12 @@ flex_negllh_var <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSI
 		for(v in 1:nVar){
 			tempVarMat <- piVarList[[v]] #for code readability
 			for(j in 1:nCat[[v]]){
-				if(utVar[[v]][j] > 0) {
-					tempSumProp <- sum(piTot * untag * tempVarMat[,j])
-					if(tempSumProp <= 0) return(Inf)
-					llh <- llh + log(tempSumProp) * utVar[[v]][j]
+				for(k in 1:nGSI){
+					if(utVar[[v]][k,j] > 0) {
+						tempSumProp <- sum(piTot * untag * piGSItemp[,k] * tempVarMat[,j])
+						if(tempSumProp <= 0) return(Inf)
+						llh <- llh + log(tempSumProp) * utVar[[v]][k,j]
+					}
 				}
 			}
 		}

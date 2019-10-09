@@ -405,7 +405,7 @@ varMat <- list(
 pbtGSImat <- matrix(c(.1, .8, .1,.8, .1, .1,.1, .1, .8), nrow = 3, ncol = 3, byrow = TRUE)
 
 multStratData <- data.frame()
-tempDataAll <- generatePBTGSIdata(sampRate = .8, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
+tempDataAll <- generatePBTGSIdata(sampRate = .5, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
 									 obsTagRates = c(.8, .85,.9), physTagRates = 0,
 			    true_clipped = 0, true_noclip_H = .3, true_wild = .7, relSizeGSIgroups = c(1,2,1), PBT_GSI_calls = pbtGSImat, varMatList = varMat)
 tempData <- tempDataAll[[1]]
@@ -443,11 +443,15 @@ utVar <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar"
 ohnc_var <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))$ohnc_var
 
 
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))[[1]]$piTot
 MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000), old = TRUE)[[1]]$piTot
 
+# 2.33572271  3.29194352  8.32946487 15.51257388  7.95920417
+# 2.33570706 3.29244461 3.98910160 7.64690898 3.82644355
 
 ## adding the variables makes the estimates worse
 ### is there something wrong in the llh equation?
+## yes, need to split variable estiamtes in utVar up by GSI group
 
 pt <- c(1, st[1:5])
 pt <- pt / sum(pt)

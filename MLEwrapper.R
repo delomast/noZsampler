@@ -33,14 +33,18 @@ MLEwrapper <- function(trapData, tags, GSIcol, PBTcol, strataCol, optimMethod = 
 			for(i in 1:nVar){
 				nCat[[i]] <- length(input$values[[i]])
 				if(nPBT > 0) ohnc_var[[i]] <- input$pi_Vohnc[[i]][1:nPBT,]
-				tempUtVar <- c()
-				for(v in input$values[[i]]){
-					tempUtVar <- c(tempUtVar, sum(input$v_ut[,i] == v))
+				tempUtVar <- matrix(0, nrow = nGSI, ncol = nCat[[i]])
+				for(v in 1:nCat[[i]]){
+					val <- input$values[[i]][v]
+					for(g in 1:nGSI){
+						gVal <- input$GSI_values[g]
+						tempUtVar[g,v] <- sum(input$v_ut[,i] == val & input$gsiUT == gVal)
+					}
 				}
 				utVar[[i]] <- tempUtVar
 			}
 		}
-		
+
 		#number of parameters to optimize
 		nParam <- nPBT + nGSI - 1
 		
@@ -152,15 +156,15 @@ MLEwrapper <- function(trapData, tags, GSIcol, PBTcol, strataCol, optimMethod = 
 		if(tempFit$convergence != 0) cat("\nOptimizer gave convergence code of", tempFit$convergence, "in strata", input$strataName, "\n")
 		
 		# return(tempFit)
-		
-					# print(flex_negllh_var(tempFit$par, nPBT = nPBT, nGSI = nGSI, ohnc = ohnc, 
-					# 				t = t, utGSI = utGSI, ohnc_gsi = ohnc_gsi, pbtGSIkey = pbtGSIkey,
-					# 				utVar = utVar, ohnc_var = ohnc_var, varKey = varKey, nCat = nCat))
-					# tryPar <- tempFit$par
-					# tryPar[1:5] <- c(2,3,3.5,7,3.5)
-					# print(flex_negllh_var(tryPar, nPBT = nPBT, nGSI = nGSI, ohnc = ohnc, 
-					# 				t = t, utGSI = utGSI, ohnc_gsi = ohnc_gsi, pbtGSIkey = pbtGSIkey,
-					# 				utVar = utVar, ohnc_var = ohnc_var, varKey = varKey, nCat = nCat))
+
+if(!old){					print(flex_negllh_var(tempFit$par, nPBT = nPBT, nGSI = nGSI, ohnc = ohnc,
+									t = t, utGSI = utGSI, ohnc_gsi = ohnc_gsi, pbtGSIkey = pbtGSIkey,
+									utVar = utVar, ohnc_var = ohnc_var, varKey = varKey, nCat = nCat))
+					tryPar <- tempFit$par
+					tryPar[1:5] <- c(2,3,3.5,7,3.5)
+					print(flex_negllh_var(tryPar, nPBT = nPBT, nGSI = nGSI, ohnc = ohnc,
+									t = t, utGSI = utGSI, ohnc_gsi = ohnc_gsi, pbtGSIkey = pbtGSIkey,
+									utVar = utVar, ohnc_var = ohnc_var, varKey = varKey, nCat = nCat))}
 		#unpack values
 		# unpack piTot
 		ptestim <- c(1, tempFit$par[1:(nPBT + nGSI - 1)])
