@@ -1,5 +1,6 @@
 #' define negative log-likelihood function
 #' this version estimates piTot and piGSI, but not other variables
+#' this version fixes piGSI estiamtes for PBT groups that are not observed in ohnc_GSI fixed at zero
 #' @param params list of paramaters to optimize
 #' @param nPBT number of pbt groups to estimate
 #' @param nGSI number of GSI groups to estimate
@@ -56,5 +57,3 @@ flex_negllh <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSIkey)
 	# returning negative log-likelihood for minimization
 	return(-llh)
 }
-
-

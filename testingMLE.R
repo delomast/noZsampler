@@ -152,3 +152,100 @@ system.time(
 
 # MLE might be a little faster
 
+#################################################################################################################
+### looking at all vs set unobserved to zero with very low tag rates
+###### note that after this section was run, MLEwrapper was changed to always estimate all GSI categories
+
+varMat <- list(
+	matrix(c(rep(c(.1,.9), 3), rep(c(.9,.1), 3)), nrow = 6, ncol = 2, byrow = TRUE),
+	matrix(c(rep(c(.4,.6), 3), rep(c(.6,.4), 3)), nrow = 6, ncol = 2, byrow = TRUE)
+)
+pbtGSImat <- matrix(c(.1, .8, .1,.8, .1, .1,.1, .1, .8), nrow = 3, ncol = 3, byrow = TRUE)
+# pbtGSImat <- matrix(1/3, nrow = 3, ncol = 3)
+
+reps <- 300
+
+ptZero <- matrix(0, nrow = reps, ncol = 6)
+ptAll <- matrix(0, nrow = reps, ncol = 6)
+
+all_names <- c("pbtGroup1",    "pbtGroup2",    "pbtGroup3",    "GSIgroup1",    "GSIgroup2", 
+   "GSIgroup3")
+colnames(ptZero) <- all_names
+colnames(ptAll) <- all_names
+
+
+for(r in 1:reps){
+	
+	multStratData <- data.frame()
+	tempDataAll <- generatePBTGSIdata(sampRate = .1, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.08, .085,.09), 
+								 obsTagRates = c(.08, .085,.09), physTagRates = 0,
+		    true_clipped = 0, true_noclip_H = .3, true_wild = .7, relSizeGSIgroups = c(1,2,1), PBT_GSI_calls = pbtGSImat, varMatList = varMat)
+	tempData <- tempDataAll[[1]]
+	tempData$StrataVar <- 1
+	multStratData <- rbind(multStratData, tempData)
+	
+	multStratData$GSI <- paste0("GSIgroup", multStratData$GSI)
+	tags <- tempDataAll[[2]]
+	if(sum(all_names[1:3] %in% multStratData$GenParentHatchery) != 3) next
+	
+	obs <- tryCatch(MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", adFinCol = "AdClip", AI = TRUE, 
+			  optimMethod = "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]$piTot,
+		error = function(e){
+			MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", adFinCol = "AdClip", AI = TRUE, 
+			  optimMethod = "Nelder-Mead", variableCols = c(), control = list(maxit = 5000))[[1]]$piTot
+			}
+		)
+	all <- MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", 
+							variableCols = c(), control = list(maxit = 50000))[[1]]$piTot
+	ptZero[r,names(obs)] <- obs
+	ptAll[r,names(all)] <- all
+	
+}
+
+
+
+ptZero <- ptZero[rowSums(ptZero) > 0,]
+ptAll <- ptAll[rowSums(ptAll) > 0,]
+
+boxplot(cbind(t(t(ptZero) / truePiTot), t(t(ptAll) / truePiTot)))
+abline(h=1)
+
+par(mfrow=c(2,3))
+for(i in 1:6) {
+	plot(ptZero[,i], ptAll[,i])
+	abline(0,1)
+}
+
+par(mfrow=c(1,1))
+
+
+compMatZero <- t(t(ptZero) / truePiTot)
+compMatAll <- t(t(ptAll) / truePiTot)
+
+apply(compMatZero,2, function(x) {
+	x <- abs(1-x)
+	mean(x)
+	})
+apply(compMatAll,2, function(x) {
+	x <- abs(1-x)
+	mean(x)
+	})
+
+apply(compMatZero,2, function(x) {
+	x <- (1-x)^2
+	mean(x)
+	})
+apply(compMatAll,2, function(x) {
+	x <- (1-x)^2
+	mean(x)
+	})
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", adFinCol = "AdClip", AI = TRUE, 
+			  optimMethod = "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]$piTot
+
+MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", 
+							variableCols = c(), control = list(maxit = 50000))[[1]]$piTot
+
+#################################################################################################################
+
+

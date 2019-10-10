@@ -1,4 +1,6 @@
 #' wrapper to process data and determine mle estimates
+#' This was for testing difference between estimating all GSI groups for piGSI vs only ones
+#' observed in the ohnc
 
 MLEwrapper_allGSI <- function(trapData, tags, GSIcol, PBTcol, strataCol, optimMethod = "BFGS",
 							  variableCols = c(), old = FALSE, ...){

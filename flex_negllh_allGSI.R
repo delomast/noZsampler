@@ -20,7 +20,7 @@ flex_negllh_allGSI <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbt
 	if(sum(piTot < 0 | piTot > 1) != 0) return(Inf)
 	#piGSI
 	# piGSItemp <- matrix(params[(nPBT + nGSI):length(params)], nrow = (nPBT), ncol = (nGSI-1), byrow = TRUE)
-	gsiParams <- params[(nPBT + nGSI):length(params)]
+	subParams <- params[(nPBT + nGSI):length(params)]
 	piGSItemp <- matrix(0, nrow = (nPBT), ncol = (nGSI)) #initiate with zeros
 	if(nPBT > 0){
 		for(i in 1:nPBT){
@@ -30,8 +30,8 @@ flex_negllh_allGSI <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbt
 			tempPos <- 1:nGSI
 			tempPos <- tempPos[tempPos != key]
 			if(length(tempPos) > 0){
-				piGSItemp[i,tempPos] <- gsiParams[1:length(tempPos)]
-				gsiParams <- gsiParams[(length(tempPos) + 1):length(gsiParams)] #bump entries forward
+				piGSItemp[i,tempPos] <- subParams[1:length(tempPos)]
+				subParams <- subParams[(length(tempPos) + 1):length(subParams)] #bump entries forward
 			}
 			piGSItemp[i,] <- piGSItemp[i,] / sum(piGSItemp[i,]) #normalize
 			if(sum(piGSItemp[i,] < 0 | piGSItemp[i,] > 1) != 0) return(Inf) #make sure all entries are valid
@@ -39,7 +39,7 @@ flex_negllh_allGSI <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbt
 	}
 	piGSItemp <- rbind(piGSItemp, diag(nGSI)) #add GSI groups as fixed 100%
 	
-	# now, caluculate the log likelihood
+	# now, calculate the log likelihood
 	llh <- 0
 	# first ohnc part
 	if(nPBT > 0) llh <- sum(ohnc * log(piTot[1:nPBT] * t[1:nPBT]))
