@@ -25,7 +25,7 @@ MLEwrapper <- function(trapData, tags, GSIcol, PBTcol, strataCol, adFinCol, AI =
 	}
 	
 	#don't need all the output from this, but it includes most things we need
-	allInput <- prepStrata(multStratData, tags, GSIcol, PBTcol, strataCol, variableCols = variableCols, variableColsOth = c(), adFinCol,
+	allInput <- prepStrata(trapData, tags, GSIcol, PBTcol, strataCol, variableCols = variableCols, variableColsOth = c(), adFinCol,
 								AI = TRUE, GSIgroups = NA,
 									 variableValues = NA, variableValuesOth = NA, verbose = FALSE, symPrior = .5)
 	
