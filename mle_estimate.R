@@ -398,6 +398,9 @@ source("./flex_negllh.R")
 source("./flex_negllh_var.R")
 source("./MLEwrapper.R")
 
+source("./flex_negllh_allGSI.R")
+source("./MLEwrapper_allGSI.R")
+
 varMat <- list(
 	matrix(c(rep(c(.1,.9), 3), rep(c(.9,.1), 3)), nrow = 6, ncol = 2, byrow = TRUE),
 	matrix(c(rep(c(.4,.6), 3), rep(c(.6,.4), 3)), nrow = 6, ncol = 2, byrow = TRUE)
@@ -406,7 +409,7 @@ pbtGSImat <- matrix(c(.1, .8, .1,.8, .1, .1,.1, .1, .8), nrow = 3, ncol = 3, byr
 pbtGSImat <- matrix(1/3, nrow = 3, ncol = 3)
 
 multStratData <- data.frame()
-tempDataAll <- generatePBTGSIdata(sampRate = .1, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
+tempDataAll <- generatePBTGSIdata(sampRate = .02, censusSize = 3000, relSizePBTgroups = c(1,2,3), tagRates = c(.8, .85,.9), 
 									 obsTagRates = c(.8, .85,.9), physTagRates = 0,
 			    true_clipped = 0, true_noclip_H = .3, true_wild = .7, relSizeGSIgroups = c(1,2,1), PBT_GSI_calls = pbtGSImat, varMatList = varMat)
 tempData <- tempDataAll[[1]]
@@ -416,6 +419,8 @@ multStratData <- rbind(multStratData, tempData)
 multStratData$GSI <- paste0("GSIgroup", multStratData$GSI)
 tags <- tempDataAll[[2]]
 
+table(multStratData$GSI, multStratData$GenParentHatchery)
+
 # MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", 5000)
 # 
 # 
@@ -424,6 +429,17 @@ tags <- tempDataAll[[2]]
 # 								AI = TRUE, GSIgroups = NA,
 # 									 variableValues = NA, variableValuesOth = NA, verbose = FALSE, symPrior = 0.5)
 # tI <- testInput[[1]]
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]$piTot
+MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]$piTot
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]
+MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c(), control = list(maxit = 5000))[[1]]
+
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "SANN", variableCols = c(), control = list(maxit = 50000))[[1]]
+MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "SANN", variableCols = c(), control = list(maxit = 50000))[[1]]
+MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", variableCols = c(), control = list(maxit = 50000))[[1]]
+MLEwrapper_allGSI(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "Nelder-Mead", variableCols = c(), control = list(maxit = 50000))[[1]]
 
 
 res <- MLEwrapper(multStratData, tags, "GSI", "GenParentHatchery", "StrataVar", "BFGS", variableCols = c("Var1"), control = list(maxit = 5000))

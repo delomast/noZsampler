@@ -1,5 +1,6 @@
 #' define negative log-likelihood function
 #' this version estimates piTot and piGSI, but not other variables
+#' Testing having it estimate all gsi groups, not just ones observed in ohnc
 #' @param params list of paramaters to optimize
 #' @param nPBT number of pbt groups to estimate
 #' @param nGSI number of GSI groups to estimate
@@ -7,11 +8,11 @@
 #' @param t list of tag rates for all PBT and GSI groups (gsi groups should be 0)
 #' @param utGSI list of number of un-PBT assigned fish in each GSI group
 #' @param ohnc_gsi matrix of counts of fish GSI assigned to various groups
-#' @param pbtGSIkey list with a vector telling which GSI groups (as integers giving their position in the order)
-#'  are nonzero for each pbt group
+#' @param pbtGSIkey list with a vector telling which GSI group (as integer giving their position in the order)
+#'  is fixed at 1 for each pbt group (shoudl be a non-zero ohnc_gsi group)
 #'  
 
-flex_negllh <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSIkey){
+flex_negllh_allGSI <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSIkey){
 	# first, unpack params
 	#piTot
 	piTot <- c(1, params[1:(nPBT + nGSI - 1)])
@@ -24,14 +25,16 @@ flex_negllh <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSIkey)
 	if(nPBT > 0){
 		for(i in 1:nPBT){
 			key <- pbtGSIkey[[i]]
-			piGSItemp[i,key[1]] <- 1 #first non-zero group is fixed
+			piGSItemp[i,key] <- 1 # group that is fixed
 			lk <- length(key)
-			if(lk > 1){
-				piGSItemp[i,key[2:lk]] <- gsiParams[1:(lk-1)]
-				gsiParams <- gsiParams[lk:length(gsiParams)] #bump entries forward
-				piGSItemp[i,] <- piGSItemp[i,] / sum(piGSItemp[i,]) #normalize
-				if(sum(piGSItemp[i,] < 0 | piGSItemp[i,] > 1) != 0) return(Inf) #make sure all entries are valid
+			tempPos <- 1:nGSI
+			tempPos <- tempPos[tempPos != key]
+			if(length(tempPos) > 0){
+				piGSItemp[i,tempPos] <- gsiParams[1:length(tempPos)]
+				gsiParams <- gsiParams[(length(tempPos) + 1):length(gsiParams)] #bump entries forward
 			}
+			piGSItemp[i,] <- piGSItemp[i,] / sum(piGSItemp[i,]) #normalize
+			if(sum(piGSItemp[i,] < 0 | piGSItemp[i,] > 1) != 0) return(Inf) #make sure all entries are valid
 		}
 	}
 	piGSItemp <- rbind(piGSItemp, diag(nGSI)) #add GSI groups as fixed 100%
@@ -48,8 +51,7 @@ flex_negllh <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSIkey)
 	# then ohnc GSI part
 	if(nPBT > 0){
 		for(i in 1:nPBT){
-			# selecting by pbtGSIkey[[i]] to avoid unobserved groups (which are estimated at 0)
-			llh <- llh + sum(ohnc_gsi[i,pbtGSIkey[[i]]] * log(piGSItemp[i,pbtGSIkey[[i]]]))
+			llh <- llh + sum(ohnc_gsi[i,] * log(piGSItemp[i,]))
 		}
 	}
 	
