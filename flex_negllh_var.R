@@ -68,9 +68,12 @@ flex_negllh_var <- function(params, nPBT, nGSI, ohnc, t, utGSI, ohnc_gsi, pbtGSI
 	if(nPBT > 0) llh <- sum(ohnc * log(piTot[1:nPBT] * t[1:nPBT]))
 	# then utGSI part
 	untag <- 1 - t
-	for(j in 1:nGSI){
-		llh <- llh + log(sum(piTot * untag * piGSItemp[,j])) * utGSI[j]
-	}
+	########################
+	#take this section out for variables b/c is duplicated in the utVar part
+	# for(j in 1:nGSI){
+	# 	llh <- llh + log(sum(piTot * untag * piGSItemp[,j])) * utGSI[j]
+	# }
+	#######################
 	# then ohnc GSI part
 	if(nPBT > 0){
 		for(i in 1:nPBT){
