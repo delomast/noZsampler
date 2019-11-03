@@ -41,7 +41,7 @@ input <- input[[1]]
 prior_piTot <- function(piTot){
 	#let's still use a dirichlet for now
 	if(sum(piTot < 0 | piTot > 1) != 0) return(0)
-	return(ddirichlet(piTot, rep(.5, length(piTot))))
+	return(ddirichlet(piTot, rep(1/length(piTot), length(piTot))))
 }
 # define log likelihood for piTot
 llh_piTot <- function(piTot, t, ohnc, piGSI, utGSI, nPBT, nGSI){
@@ -167,3 +167,20 @@ plot(r_piTot[,6])
 
 prior_piTot(r_piTot[10000,])
 prior_piTot(r_piTot[1000,])
+
+
+### looking at different proposals
+
+testPropose <- function(){
+	# rec <- rdirichlet(2, c(1,1,1,1,1,1))
+	rec <- rdirichlet(1, c(3,1,1,1,1,1))[1,] - rep(1/6,6)
+	return(rec * rnorm(1,0,.03))
+}
+
+hist(replicate(10000, testPropose())[1,])
+
+## note that as difference in alphas becomes large, can result in groups 
+##  that only move in opposite directions of each other b/c 1 is always greater
+##  than 1/N and the other is always lower than 1/N
+## will that cause problems?
+## maybe throw in a proposal from all alphas equal 1 every now and then?
